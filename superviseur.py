@@ -9,30 +9,108 @@ sem_name = "/sem_arinc"
 # INFORMATIONS SUR LA STRUCTURE DE LA TRAME ARINC 429
 # B = uint8_t (label) -> 1 octet
 # B = uint8_t (sdi)   -> 1 octet
-# I = uint32_t (data_raw) -> 4 octets
+# I = int32_t (data_raw) -> 4 octets
 # B = uint8_t (ssm)   -> 1 octet
 # B = uint8_t (parite) -> 1 octet
 # B = uint8_t (parite_ok) -> 1 octet
 # Total exact : 9 octets, sans aucun décalage possible !
-STRUCT_FORMAT = "<BBIBBB"
+STRUCT_FORMAT = "<BBiBBB"
 STRUCT_SIZE = struct.calcsize(STRUCT_FORMAT)
+
 
 # Dictionnaire de traduction ARINC 429 (Label octal -> Métier physique)
 ARINC_DICTIONARY = {
-    0o326: {
+    # ============= Air Data / Anémométrie
+    0o203: {
+        "nom": "Altitude Pression",
+        "unit": "ft",
+        "scale": 1.0,
+    },
+    0o205: {
+        "nom": "Vitesse Indiquée (CAS)",
+        "unit": "kt",
+        "scale": 0.1,
+    },
+    0o206: {
         "nom": "Vitesse Vraie (TAS)",
         "unit": "kt",
-        "scale": 0.1,  # Facteur d'échelle pour l'exemple de simulation
+        "scale": 0.1,
     },
-    0o327: {
-        "nom": "Altitude / Hauteur",
-        "unit": "ft",
-        "scale": 1.0,  # Facteur direct ou résolution standard
+    0o210: {
+        "nom": "Vitesse Verticale",
+        "unit": "ft/min",
+        "scale": 4.0,
     },
-    0o236: {
-        "nom": "Cap (Heading)",
+    0o212: {
+        "nom": "Température Totale (TAT)",
+        "unit": "°C",
+        "scale": 0.25,
+    },
+
+    # ============= Attitude & Centrale Inertielle (IRS)
+    0o310: {
+        "nom": "Assiette (Pitch)",
         "unit": "°",
-        "scale": 0.05, # Facteur d'échelle pour simuler des degrés
+        "scale": 0.05,
+    },
+    0o312: {
+        "nom": "Cap Magnétique",
+        "unit": "°",
+        "scale": 0.05,
+    },
+    0o320: {
+        "nom": "Angle d'Attaque (AoA)",
+        "unit": "°",
+        "scale": 0.01,
+    },
+    0o333: {
+        "nom": "Accélération Normale",
+        "unit": "G",
+        "scale": 0.001,
+    },
+
+    # ============= Navigation & GPS
+    0o010: {
+        "nom": "Longitude GPS",
+        "unit": "°",
+        "scale": 0.0001,
+    },
+    0o011: {
+        "nom": "Latitude GPS",
+        "unit": "°",
+        "scale": 0.0001,
+    },
+    0o013: {
+        "nom": "Vitesse du Vent",
+        "unit": "kt",
+        "scale": 0.1,
+    },
+    0o015: {
+        "nom": "Vitesse Sol (Ground Speed)",
+        "unit": "kt",
+        "scale": 0.1,
+    },
+    
+    # ============= Moteurs & Systèmes
+    0o340: {
+        "nom": "Régime Moteur N1",
+        "unit": "%",
+        "scale": 0.01,
+    },
+    0o341: {
+        "nom": "Régime Moteur N2",
+        "unit": "%",
+        "scale": 0.01,
+    },
+    0o342: {
+        "nom": "Température Gaz d'Échappement (EGT)",
+        "unit": "°C",
+        "scale": 1.0,
+    },
+    0o350: {
+        "nom": "Pression d'Huile Moteur",
+        "unit": "psi",
+        "scale": 0.1,
     },
 }
 
@@ -45,7 +123,6 @@ while semaphore is None or f is None:
     try:
         if semaphore is None:
             # Connexion au sémaphore nommé créé par le C
-            # flags=0 signifie qu'on s'attend à ce qu'il existe déjà
             semaphore = posix_ipc.Semaphore(sem_name, flags=0)
         if f is None:
             f = open(shm_path, "rb")
